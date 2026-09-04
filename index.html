@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NTS Converter</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    border-radius: 0 !important;
+  }
+
+  :root {
+    --bg: #000000;
+    --surface: #0a0a0a;
+    --surface-2: #111111;
+    --border: #ffffff;
+    --border-dim: #444444;
+    --text: #ffffff;
+    --text-dim: #999999;
+    --accent-bg: #ffffff;
+    --accent-text: #000000;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 20px 40px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 900px;
+    position: relative;
+  }
+
+  .lang-switch {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+  }
+
+  .lang-btn {
+    background: transparent;
+    color: var(--text);
+    border: none;
+    border-right: 1px solid var(--border);
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .lang-btn:last-child {
+    border-right: none;
+  }
+
+  .lang-btn:hover,
+  .lang-btn.active {
+    background: var(--accent-bg);
+    color: var(--accent-text);
+  }
+
+  header {
+    margin-bottom: 24px;
+    padding-right: 160px;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+  }
+
+  .subtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--text-dim);
+    font-family: monospace;
+  }
+
+  .direction-switch {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .dir-btn {
+    flex: 1;
+    background: transparent;
+    color: var(--text);
+    border: none;
+    border-right: 1px solid var(--border);
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .dir-btn:last-child {
+    border-right: none;
+  }
+
+  .dir-btn:hover,
+  .dir-btn.active {
+    background: var(--accent-bg);
+    color: var(--accent-text);
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .panel-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 140px;
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border-dim);
+    padding: 14px;
+    font-family: monospace;
+    font-size: 15px;
+    line-height: 1.6;
+    resize: vertical;
+    outline: none;
+  }
+
+  textarea:focus {
+    border-color: var(--border);
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 16px 0;
+  }
+
+  button {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  button:hover {
+    background: var(--accent-bg);
+    color: var(--accent-text);
+  }
+
+  button.small {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: monospace;
+    min-height: 20px;
+    margin-top: 8px;
+  }
+
+  .status-bar .ok { color: var(--text); }
+  .status-bar .bad { color: var(--text); }
+  .status-bar .info { color: var(--text-dim); }
+
+  .unknown-list {
+    margin-top: 8px;
+    padding: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    font-family: monospace;
+    font-size: 12px;
+    display: none;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .footer {
+    margin-top: 24px;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: center;
+    font-family: monospace;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="lang-switch">
+    <button class="lang-btn active" data-lang="ru">RU</button>
+    <button class="lang-btn" data-lang="en">EN</button>
+    <button class="lang-btn" data-lang="nts">NTS</button>
+  </div>
+
+  <header>
+    <h1 id="i18n-title">Novax Transcription System</h1>
+    <div class="subtitle" id="i18n-subtitle">кириллица ⇄ NTS · live-режим · двойные буквы → макрон снизу</div>
+  </header>
+
+  <div class="direction-switch">
+    <button class="dir-btn active" data-dir="cyr2nts" id="i18n-dir-cyr2nts">Кириллица → NTS</button>
+    <button class="dir-btn" data-dir="nts2cyr" id="i18n-dir-nts2cyr">NTS → Кириллица</button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label" id="i18n-input-label">Вход · Кириллица</div>
+    <textarea id="input" placeholder="Например: съёживающийся"></textarea>
+  </div>
+
+  <div class="toolbar">
+    <button id="btnCheck" class="outline" id="i18n-btn-check">Проверить NTS</button>
+    <button id="btnNormalize" class="outline" id="i18n-btn-normalize">Нормализовать NFC</button>
+    <button id="btnClear" class="danger" id="i18n-btn-clear">Очистить</button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label" id="i18n-output-label">Результат · NTS</div>
+    <textarea id="output" readonly placeholder="Здесь появится NTS"></textarea>
+    <div class="toolbar" style="margin-bottom: 0;">
+      <button id="btnCopy" class="small outline" id="i18n-btn-copy">Копировать</button>
+    </div>
+    <div class="status-bar" id="status"></div>
+    <div class="unknown-list" id="unknownBox"></div>
+  </div>
+
+  <div class="footer" id="i18n-footer">NTS 1.0 · 33 графемы · live-режим</div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  //  ЛОКАЛИЗАЦИЯ
+  // ============================================================
+
+  var I18N = {
+    ru: {
+      title: 'Novax Transcription System',
+      subtitle: 'кириллица ⇄ NTS · live-режим · двойные буквы → макрон снизу',
+      dirCyr2Nts: 'Кириллица → NTS',
+      dirNts2Cyr: 'NTS → Кириллица',
+      inputLabelCyr: 'Вход · Кириллица',
+      inputLabelNts: 'Вход · NTS',
+      outputLabelCyr: 'Результат · Кириллица',
+      outputLabelNts: 'Результат · NTS',
+      inputPhCyr: 'Например: съёживающийся',
+      inputPhNts: 'NapRımer: s̩ëžıvaüŝıĭsâ',
+      outputPhCyr: 'Здесь появится кириллица',
+      outputPhNts: 'Здесь появится NTS',
+      btnCheck: 'Проверить NTS',
+      btnNormalize: 'Нормализовать NFC',
+      btnClear: 'Очистить',
+      btnCopy: 'Копировать',
+      footer: 'NTS 1.0 · 33 графемы · live-режим',
+      liveForward: 'Live: кириллица → NTS',
+      liveBackward: 'Live: NTS → кириллица',
+      noText: 'Нет текста',
+      noResult: 'Нет результата',
+      cleared: 'Очищено',
+      copied: 'Скопировано',
+      copiedFallback: 'Скопировано (fallback)',
+      normalized: 'Нормализовано (NFC)',
+      checkValid: 'Соответствует NTS · знаков текста: ',
+      checkInvalid: 'Символы вне NTS: ',
+      unknownHeader: 'Неизвестные символы:\n'
+    },
+    en: {
+      title: 'Novax Transcription System',
+      subtitle: 'Cyrillic ⇄ NTS · live mode · double letters → macron below',
+      dirCyr2Nts: 'Cyrillic → NTS',
+      dirNts2Cyr: 'NTS → Cyrillic',
+      inputLabelCyr: 'Input · Cyrillic',
+      inputLabelNts: 'Input · NTS',
+      outputLabelCyr: 'Output · Cyrillic',
+      outputLabelNts: 'Output · NTS',
+      inputPhCyr: 'Example: съёживающийся',
+      inputPhNts: 'Example: s̩ëžıvaüŝıĭsâ',
+      outputPhCyr: 'Cyrillic will appear here',
+      outputPhNts: 'NTS will appear here',
+      btnCheck: 'Check NTS',
+      btnNormalize: 'Normalize NFC',
+      btnClear: 'Clear',
+      btnCopy: 'Copy',
+      footer: 'NTS 1.0 · 33 graphemes · live mode',
+      liveForward: 'Live: Cyrillic → NTS',
+      liveBackward: 'Live: NTS → Cyrillic',
+      noText: 'No text',
+      noResult: 'No result',
+      cleared: 'Cleared',
+      copied: 'Copied',
+      copiedFallback: 'Copied (fallback)',
+      normalized: 'Normalized (NFC)',
+      checkValid: 'NTS compliant · text chars: ',
+      checkInvalid: 'Non-NTS chars: ',
+      unknownHeader: 'Unknown characters:\n'
+    },
+    nts: {
+      title: 'Novax Transcription System',
+      subtitle: 'kırıḻıca ⇄ NTS · lıve-režım · dvoĭnìe bukvì → makron snızu',
+      dirCyr2Nts: 'Kırıḻıca → NTS',
+      dirNts2Cyr: 'NTS → Kırıḻıca',
+      inputLabelCyr: 'Vhod · Kırıḻıca',
+      inputLabelNts: 'Vhod · NTS',
+      outputLabelCyr: 'Rezul̰tat · Kırıḻıca',
+      outputLabelNts: 'Rezul̰tat · NTS',
+      inputPhCyr: 'Naprımer: s̩ëžıvaüŝıĭsâ',
+      inputPhNts: 'Naprımer: s̩ëžıvaüŝıĭsâ',
+      outputPhCyr: 'Zdes̰ poâvıtsâ kırıḻıca',
+      outputPhNts: 'Zdes̰ poâvıtsâ NTS',
+      btnCheck: 'Proverıt̰ NTS',
+      btnNormalize: 'Normalızovat̰ NFC',
+      btnClear: 'Očıstıt̰',
+      btnCopy: 'Kopırovat̰',
+      footer: 'NTS 1.0 · 33 grafemì · lıve-režım',
+      liveForward: 'Lıve: kırıḻıca → NTS',
+      liveBackward: 'Lıve: NTS → kırıḻıca',
+      noText: 'Net teksta',
+      noResult: 'Net rezul̰tata',
+      cleared: 'Očıŝeno',
+      copied: 'Skopırovano',
+      copiedFallback: 'Skopırovano (fallback)',
+      normalized: 'Normalızovano (NFC)',
+      checkValid: 'Sootvetstvuet NTS · znakov teksta: ',
+      checkInvalid: 'Sımvolì vne NTS: ',
+      unknownHeader: 'Neızvestnìe sımvolì:\n'
+    }
+  };
+
+  var currentLang = 'ru';
+  var currentDir = 'cyr2nts';
+
+  function t(key) {
+    return I18N[currentLang][key] || key;
+  }
+
+  function applyLanguage(lang) {
+    currentLang = lang;
+    updateUITexts();
+    document.querySelectorAll('.lang-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+    });
+  }
+
+  function applyDirection(dir) {
+    currentDir = dir;
+    updateUITexts();
+    document.querySelectorAll('.dir-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-dir') === dir);
+    });
+    convert();
+  }
+
+  function updateUITexts() {
+    document.getElementById('i18n-title').textContent = t('title');
+    document.getElementById('i18n-subtitle').textContent = t('subtitle');
+    document.getElementById('i18n-footer').textContent = t('footer');
+
+    document.getElementById('i18n-dir-cyr2nts').textContent = t('dirCyr2Nts');
+    document.getElementById('i18n-dir-nts2cyr').textContent = t('dirNts2Cyr');
+
+    var inputLabel = currentDir === 'cyr2nts' ? t('inputLabelCyr') : t('inputLabelNts');
+    var outputLabel = currentDir === 'cyr2nts' ? t('outputLabelNts') : t('outputLabelCyr');
+    var inputPh = currentDir === 'cyr2nts' ? t('inputPhCyr') : t('inputPhNts');
+    var outputPh = currentDir === 'cyr2nts' ? t('outputPhNts') : t('outputPhCyr');
+
+    document.getElementById('i18n-input-label').textContent = inputLabel;
+    document.getElementById('i18n-output-label').textContent = outputLabel;
+    document.getElementById('input').placeholder = inputPh;
+    document.getElementById('output').placeholder = outputPh;
+
+    document.getElementById('btnCheck').textContent = t('btnCheck');
+    document.getElementById('btnNormalize').textContent = t('btnNormalize');
+    document.getElementById('btnClear').textContent = t('btnClear');
+    document.getElementById('btnCopy').textContent = t('btnCopy');
+  }
+
+  document.querySelectorAll('.lang-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      applyLanguage(btn.getAttribute('data-lang'));
+    });
+  });
+
+  document.querySelectorAll('.dir-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      applyDirection(btn.getAttribute('data-dir'));
+    });
+  });
+
+  // ============================================================
+  //  ТАБЛИЦА NTS
+  // ============================================================
+
+  var NTS_TABLE = [
+    { cyr: ['а','А'], nts: ['a','A'] },
+    { cyr: ['б','Б'], nts: ['b','B'] },
+    { cyr: ['в','В'], nts: ['v','V'] },
+    { cyr: ['г','Г'], nts: ['g','G'] },
+    { cyr: ['д','Д'], nts: ['d','D'] },
+    { cyr: ['е','Е'], nts: ['e','E'] },
+    { cyr: ['ё','Ё'], nts: ['ë','Ë'] },
+    { cyr: ['ж','Ж'], nts: ['ž','Ž'] },
+    { cyr: ['з','З'], nts: ['z','Z'] },
+    { cyr: ['и','И'], nts: ['ı','I'] },
+    { cyr: ['й','Й'], nts: ['ĭ','Ĭ'] },
+    { cyr: ['к','К'], nts: ['k','K'] },
+    { cyr: ['л','Л'], nts: ['l','L'] },
+    { cyr: ['м','М'], nts: ['m','M'] },
+    { cyr: ['н','Н'], nts: ['n','N'] },
+    { cyr: ['о','О'], nts: ['o','O'] },
+    { cyr: ['п','П'], nts: ['p','P'] },
+    { cyr: ['р','Р'], nts: ['r','R'] },
+    { cyr: ['с','С'], nts: ['s','S'] },
+    { cyr: ['т','Т'], nts: ['t','T'] },
+    { cyr: ['у','У'], nts: ['u','U'] },
+    { cyr: ['ф','Ф'], nts: ['f','F'] },
+    { cyr: ['х','Х'], nts: ['h','H'] },
+    { cyr: ['ц','Ц'], nts: ['c','C'] },
+    { cyr: ['ч','Ч'], nts: ['č','Č'] },
+    { cyr: ['ш','Ш'], nts: ['š','Š'] },
+    { cyr: ['щ','Щ'], nts: ['ŝ','Ŝ'] },
+    { cyr: ['ъ','Ъ'], nts: ['\u0329','\u0329'], combining: true },
+    { cyr: ['ы','Ы'], nts: ['ì','Ì'] },
+    { cyr: ['ь','Ь'], nts: ['\u0330','\u0330'], combining: true },
+    { cyr: ['э','Э'], nts: ['è','È'] },
+    { cyr: ['ю','Ю'], nts: ['ü','Ü'] },
+    { cyr: ['я','Я'], nts: ['â','Â'] }
+  ];
+
+  var DOUBLE_MARK = '\u0331';
+
+  var forwardMap = new Map();
+  var backwardMap = new Map();
+  var upperNTS_to_lowerCyr = new Map();
+  var validNTSChars = new Set();
+  var lowerNTSLetters = new Set();
+  var upperNTSLetters = new Set();
+  var combiningToCyr = new Map();
+  var combiningCyrillic = new Set();
+
+  NTS_TABLE.forEach(function(entry) {
+    forwardMap.set(entry.cyr[0], entry.nts[0]);
+    forwardMap.set(entry.cyr[1], entry.nts[1]);
+    backwardMap.set(entry.nts[0], entry.cyr[0]);
+    backwardMap.set(entry.nts[1], entry.cyr[1]);
+    validNTSChars.add(entry.nts[0]);
+    validNTSChars.add(entry.nts[1]);
+    if (entry.combining) {
+      combiningToCyr.set(entry.nts[0], entry.cyr[0]);
+      combiningToCyr.set(entry.nts[1], entry.cyr[1]);
+      combiningCyrillic.add(entry.cyr[0]);
+      combiningCyrillic.add(entry.cyr[1]);
+    } else {
+      lowerNTSLetters.add(entry.nts[0]);
+      upperNTSLetters.add(entry.nts[1]);
+      upperNTS_to_lowerCyr.set(entry.nts[1], entry.cyr[0]);
+    }
+  });
+
+  function isCyrillicChar(ch) { return forwardMap.has(ch); }
+  function isNTSLetter(ch) { return backwardMap.has(ch) && !combiningToCyr.has(ch); }
+  function isSpace(ch) { return ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r'; }
+  function isDigit(ch) { var c = ch.charCodeAt(0); return c >= 48 && c <= 57; }
+  function isPunctuation(ch) {
+    var c = ch.charCodeAt(0);
+    return (c >= 33 && c <= 47) || (c >= 58 && c <= 64) || (c >= 91 && c <= 96) || (c >= 123 && c <= 126);
+  }
+  function isCombiningMark(ch) {
+    var c = ch.charCodeAt(0);
+    return (c >= 0x0300 && c <= 0x036F);
+  }
+  function isExcludedFromCheck(ch) {
+    return isSpace(ch) || isDigit(ch) || isPunctuation(ch) || isCombiningMark(ch);
+  }
+  function isNTSWordChar(ch) { return isNTSLetter(ch) || isCombiningMark(ch); }
+
+  function isWordAllCaps(src, index) {
+    var start = index;
+    while (start > 0 && isNTSWordChar(src[start - 1])) start--;
+    var end = index;
+    while (end < src.length - 1 && isNTSWordChar(src[end + 1])) end++;
+    for (var j = start; j <= end; j++) {
+      var c = src[j];
+      if (isNTSLetter(c) && lowerNTSLetters.has(c)) return false;
+    }
+    return true;
+  }
+
+  function forwardConvert(input) {
+    var out = '';
+    for (var i = 0; i < input.length; i++) {
+      var ch = input[i];
+      if (combiningCyrillic.has(ch)) {
+        out += forwardMap.get(ch);
+        continue;
+      }
+      if (isCyrillicChar(ch)) {
+        if (i + 1 < input.length && input[i + 1] === ch) {
+          out += forwardMap.get(ch) + DOUBLE_MARK;
+          i++;
+        } else {
+          out += forwardMap.get(ch);
+        }
+      } else {
+        out += ch;
+      }
+    }
+    return { result: out, unknown: new Map() };
+  }
+
+  function backwardConvert(input) {
+    var out = '';
+    var unknown = new Map();
+    for (var i = 0; i < input.length; i++) {
+      var ch = input[i];
+      if (isNTSLetter(ch) && i + 1 < input.length && input[i + 1] === DOUBLE_MARK) {
+        var firstCyr = backwardMap.get(ch);
+        if (isWordAllCaps(input, i)) {
+          out += firstCyr + firstCyr;
+        } else {
+          var secondCyr = upperNTSLetters.has(ch) ? upperNTS_to_lowerCyr.get(ch) : backwardMap.get(ch);
+          out += firstCyr + secondCyr;
+        }
+        i++;
+        continue;
+      }
+      if (combiningToCyr.has(ch)) {
+        out += combiningToCyr.get(ch);
+        continue;
+      }
+      if (backwardMap.has(ch)) {
+        out += backwardMap.get(ch);
+      } else {
+        out += ch;
+        if (!isExcludedFromCheck(ch)) {
+          unknown.set(ch, (unknown.get(ch) || 0) + 1);
+        }
+      }
+    }
+    return { result: out, unknown: unknown };
+  }
+
+  function checkNTS(input) {
+    var invalid = new Map();
+    var total = 0;
+    var format = 0;
+    for (var i = 0; i < input.length; i++) {
+      var ch = input[i];
+      if (isSpace(ch)) { format++; continue; }
+      if (isExcludedFromCheck(ch)) continue;
+      total++;
+      if (!validNTSChars.has(ch)) {
+        invalid.set(ch, (invalid.get(ch) || 0) + 1);
+      }
+    }
+    return { total: total, formatCount: format, invalid: invalid, isFullyValid: invalid.size === 0 };
+  }
+
+  // ============================================================
+  //  UI
+  // ============================================================
+
+  var inputEl = document.getElementById('input');
+  var outputEl = document.getElementById('output');
+  var statusEl = document.getElementById('status');
+  var unknownBox = document.getElementById('unknownBox');
+
+  function setStatus(msg, type) {
+    statusEl.innerHTML = '';
+    var span = document.createElement('span');
+    span.textContent = msg;
+    span.className = type || 'info';
+    statusEl.appendChild(span);
+  }
+
+  function setUnknown(countsMap) {
+    if (!countsMap || countsMap.size === 0) {
+      unknownBox.style.display = 'none';
+      unknownBox.textContent = '';
+      return;
+    }
+    unknownBox.style.display = 'block';
+    var lines = [];
+    countsMap.forEach(function(count, ch) {
+      var code = ch.codePointAt(0).toString(16).toUpperCase();
+      lines.push(ch + ' — U+' + code + ' — ' + count);
+    });
+    unknownBox.textContent = t('unknownHeader') + lines.join('\n');
+  }
+
+  function convert() {
+    var src = inputEl.value;
+    var r;
+    if (currentDir === 'cyr2nts') {
+      r = forwardConvert(src);
+      setStatus(t('liveForward'), 'info');
+    } else {
+      r = backwardConvert(src);
+      setStatus(t('liveBackward'), 'info');
+    }
+    outputEl.value = r.result;
+    setUnknown(r.unknown);
+  }
+
+  inputEl.addEventListener('input', convert);
+
+  document.getElementById('btnCheck').addEventListener('click', function() {
+    var checkText;
+    if (currentDir === 'cyr2nts') {
+      checkText = outputEl.value;
+    } else {
+      checkText = inputEl.value;
+    }
+    if (!checkText.trim()) { setStatus(t('noText'), 'bad'); return; }
+
+    var check = checkNTS(checkText);
+    if (check.isFullyValid) {
+      setStatus(t('checkValid') + check.total, 'ok');
+    } else {
+      setStatus(t('checkInvalid') + check.invalid.size, 'bad');
+    }
+    setUnknown(check.invalid);
+  });
+
+  document.getElementById('btnNormalize').addEventListener('click', function() {
+    if (inputEl.value) inputEl.value = inputEl.value.normalize('NFC');
+    if (outputEl.value) outputEl.value = outputEl.value.normalize('NFC');
+    setStatus(t('normalized'), 'info');
+    convert();
+  });
+
+  document.getElementById('btnClear').addEventListener('click', function() {
+    inputEl.value = '';
+    outputEl.value = '';
+    setStatus(t('cleared'), 'info');
+    setUnknown(new Map());
+    inputEl.focus();
+  });
+
+  document.getElementById('btnCopy').addEventListener('click', function() {
+    if (!outputEl.value) { setStatus(t('noResult'), 'bad'); return; }
+    navigator.clipboard.writeText(outputEl.value).then(function() {
+      setStatus(t('copied'), 'ok');
+    }).catch(function() {
+      outputEl.select();
+      document.execCommand('copy');
+      setStatus(t('copiedFallback'), 'ok');
+    });
+  });
+
+  // Инициализация
+  applyLanguage('ru');
+  applyDirection('cyr2nts');
+  inputEl.focus();
+})();
+</script>
+</body>
+</html>
