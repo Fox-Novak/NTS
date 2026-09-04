@@ -1,4 +1,4 @@
-# NTS — Novax Transcription System
+# NTS — Novak's Transcription System
 
 **Версия:** 1.0  
 **Автор:** Фокс Новак (Fox Nóvak)  
